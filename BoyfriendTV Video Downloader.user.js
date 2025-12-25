@@ -5,6 +5,8 @@
 // @description  Scrip para Download de seguimentos HLS, com interface moderna e polida.
 // @author       Parceiro IA & User
 // @match        *://*.boyfriendtv.com/videos/*
+// @updateURL    https://github.com/JohnWiliam/YouTube-Enhancer/raw/refs/heads/main/YouTube%20Enhancer.user.js
+// @downloadURL  https://github.com/JohnWiliam/YouTube-Enhancer/raw/refs/heads/main/YouTube%20Enhancer.user.js
 // @grant        GM_addStyle
 // @grant        GM_setClipboard
 // @grant        GM_download
@@ -34,15 +36,14 @@
     };
 
     // ===================================================================================
-    // 1. ESTILO VISUAL (Reset Total & Grid Layout)
+    // 1. ESTILO VISUAL (Grid Layout Estável - v8.0)
     // ===================================================================================
     const STYLES = `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-        /* Container Raiz - Isolamento total */
         #bftv-root {
-            all: initial; /* Reseta tudo que vem do site */
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            all: initial;
+            font-family: 'Inter', system-ui, sans-serif;
             position: fixed;
             bottom: 30px;
             right: 30px;
@@ -56,12 +57,8 @@
             box-sizing: border-box;
         }
 
-        #bftv-root * {
-            box-sizing: border-box;
-            outline: none;
-        }
+        #bftv-root * { box-sizing: border-box; outline: none; }
 
-        /* Variáveis Locais */
         #bftv-root {
             --bg-color: #0f0f0f;
             --surface-color: #1e1e1e;
@@ -72,197 +69,98 @@
             --accent-hover: #2563eb;
             --success-color: #22c55e;
             --error-color: #ef4444;
-            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
         }
 
-        /* Botão Flutuante (FAB) */
+        /* Botão FAB */
         .bftv-fab {
-            width: 56px;
-            height: 56px;
+            width: 56px; height: 56px;
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 50%;
             color: var(--text-primary);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             box-shadow: var(--shadow-lg);
             transition: transform 0.2s, border-color 0.2s;
         }
-
-        .bftv-fab:hover {
-            transform: scale(1.1);
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-        }
-
+        .bftv-fab:hover { transform: scale(1.1); border-color: var(--accent-color); color: var(--accent-color); }
         .bftv-fab svg { width: 24px; height: 24px; stroke-width: 2.5; stroke: currentColor; fill: none; }
 
-        /* Painel Principal */
+        /* Painel */
         .bftv-panel {
-            width: 400px; /* Largura fixa generosa */
+            width: 400px;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             overflow: hidden;
             box-shadow: var(--shadow-lg);
-            display: none;
-            opacity: 0;
-            transform: translateY(10px);
+            display: none; opacity: 0; transform: translateY(10px);
             transition: opacity 0.3s, transform 0.3s;
         }
+        .bftv-panel.active { display: flex; flex-direction: column; opacity: 1; transform: translateY(0); }
 
-        .bftv-panel.active {
-            display: flex;
-            flex-direction: column;
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .bftv-header { padding: 16px 20px; background-color: var(--surface-color); border-bottom: 1px solid var(--border-color); }
+        .bftv-app-name { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px; }
+        .bftv-video-title { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Cabeçalho */
-        .bftv-header {
-            padding: 16px 20px;
-            background-color: var(--surface-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .bftv-app-name {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .bftv-video-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Lista de Itens */
-        .bftv-list {
-            padding: 12px;
-            max-height: 400px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        /* Scrollbar Customizada */
+        .bftv-list { padding: 12px; max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         .bftv-list::-webkit-scrollbar { width: 6px; }
         .bftv-list::-webkit-scrollbar-track { background: transparent; }
         .bftv-list::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
-        .bftv-list::-webkit-scrollbar-thumb:hover { background-color: #444; }
 
-        /* Card do Item (Grid Layout para estabilidade) */
+        /* Card (Grid) */
         .bftv-item {
             position: relative;
             background-color: var(--surface-color);
             border-radius: 8px;
-            padding: 14px 16px; /* Padding interno seguro */
+            padding: 14px 16px;
             cursor: pointer;
             border: 1px solid transparent;
             transition: background 0.2s;
             overflow: hidden;
-
-            /* GRID: A mágica acontece aqui.
-               1fr = texto ocupa o resto.
-               auto = status e botão ocupam o necessário. */
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 16px;
             align-items: center;
         }
+        .bftv-item:hover { background-color: #262626; border-color: rgba(255,255,255,0.1); }
 
-        .bftv-item:hover {
-            background-color: #262626;
-            border-color: rgba(255,255,255,0.1);
-        }
-
-        /* Barra de progresso (Background) */
         .bftv-progress-bg {
-            position: absolute;
-            top: 0; left: 0; bottom: 0;
-            width: 0%;
-            background-color: rgba(59, 130, 246, 0.2);
-            z-index: 0;
-            transition: width 0.3s linear;
-            pointer-events: none;
+            position: absolute; top: 0; left: 0; bottom: 0; width: 0%;
+            background-color: rgba(59, 130, 246, 0.2); z-index: 0;
+            transition: width 0.3s linear; pointer-events: none;
         }
 
-        /* Área de Texto (Esquerda) */
-        .bftv-text-area {
-            position: relative; z-index: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            min-width: 0; /* Permite que o texto quebre ou use ellipsis */
-        }
+        .bftv-text-area { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .bftv-res { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .bftv-meta { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
 
-        .bftv-res {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .bftv-meta {
-            font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* Área de Ação (Direita) */
-        .bftv-action-area {
-            position: relative; z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .bftv-status {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--accent-color);
-            text-align: right;
-            white-space: nowrap;
-        }
+        .bftv-action-area { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
+        .bftv-status { font-size: 12px; font-weight: 600; color: var(--accent-color); text-align: right; white-space: nowrap; }
 
         .bftv-btn-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
+            width: 32px; height: 32px; border-radius: 6px;
             background-color: rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-primary);
-            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-primary); transition: all 0.2s;
         }
-
         .bftv-btn-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke: currentColor; }
 
         .bftv-item:hover .bftv-btn-icon { background-color: rgba(255, 255, 255, 0.1); color: var(--accent-color); }
         .bftv-item:hover .bftv-btn-icon.cancel-mode { background-color: rgba(239, 68, 68, 0.15); color: var(--error-color); }
 
-        /* Mensagens */
         .bftv-message { padding: 20px; text-align: center; color: var(--text-secondary); font-size: 13px; }
         .bftv-error { color: var(--error-color); }
     `;
 
     // ===================================================================================
-    // 2. LÓGICA DO USUÁRIO (Preservada)
+    // 2. LÓGICA (Extração e Download)
     // ===================================================================================
 
-    // Extractor
     class MediaExtractor {
         constructor() { this.media = { title: 'video', sources: [] }; }
+
         async extract() {
             this.getTitle();
             await this.extractFromSourcesVar();
@@ -272,10 +170,33 @@
             this.media.sources.sort((a, b) => (parseInt(b.label, 10) || 0) - (parseInt(a.label, 10) || 0));
             return this.media;
         }
+
+        // --------------------------------------------------------
+        // ATUALIZAÇÃO: Remoção de elemento poluente (.views-count)
+        // --------------------------------------------------------
         getTitle() {
-            const el = document.querySelector('h1') || document.querySelector('title');
-            this.media.title = (el?.textContent.trim() || 'video').replace(/[^\w\s.-]/gi, '').substring(0, 80);
+            let text = 'video';
+            const h1 = document.querySelector('h1');
+
+            if (h1) {
+                // Clona o nó H1 para manipular sem afetar a página
+                const clone = h1.cloneNode(true);
+
+                // Remove a div de contagem de views, se existir no clone
+                const viewsCount = clone.querySelector('.views-count');
+                if (viewsCount) {
+                    viewsCount.remove();
+                }
+
+                text = clone.textContent;
+            } else {
+                text = document.title || 'video';
+            }
+
+            // Limpeza final de espaços e limitação de caracteres
+            this.media.title = text.trim().substring(0, 100);
         }
+
         extractFromSourcesVar() {
             const match = document.documentElement.innerHTML.match(/var\s+sources\s*=\s*(\[[^]*?\]);/);
             if (!match?.[1]) return;
@@ -284,6 +205,7 @@
                 sourcesArray.forEach(s => s.src && this.media.sources.push({ url: s.src.replace(/\\/g, ''), label: s.desc || 'Auto', type: 'HLS' }));
             } catch (e) { debug.log('Extractor', 'Erro JSON', e); }
         }
+
         extractFromVideoElement() {
             const video = document.querySelector('video'); if (!video) return;
             const source = video.querySelector('source');
@@ -292,7 +214,6 @@
         }
     }
 
-    // Downloader
     class Downloader {
         constructor(source, title) {
             this.source = source;
@@ -301,7 +222,7 @@
             this.isCancelled = false;
             this.activeRequests = new Set();
             this._events = {};
-            this.resumeKey = `bf-resume-${title.replace(/\s/g, '-')}`;
+            this.resumeKey = `bf-resume-${title.replace(/[^a-zA-Z0-9]/g, '-')}`;
         }
         on(e, cb) { if (!this._events[e]) this._events[e] = []; this._events[e].push(cb); }
         _emit(e, d) { this._events[e]?.forEach(cb => cb(d)); }
@@ -319,12 +240,44 @@
                 const blobs = await this.downloadAllSegments();
                 if (this.isCancelled) return;
 
-                this._emit('progress', { percent: 100, message: 'Processando...', speed: 0, eta: 0 });
+                this._emit('progress', { percent: 100, message: 'Unindo...', speed: 0, eta: 0 });
+
                 const mergedBlob = new Blob(blobs, { type: 'video/mp2t' });
                 this.saveFile(mergedBlob);
                 await this.clearCompletionState();
             } catch (error) {
                 if (!this.isCancelled) this._emit('error', { message: error.message });
+            }
+        }
+
+        saveFile(blob) {
+            // Limpeza rigorosa do nome do arquivo
+            const safeTitle = this.title.replace(/[\\/:*?"<>|]/g, '_').trim();
+            const filename = `${safeTitle}.ts`;
+            const url = window.URL.createObjectURL(blob);
+
+            try {
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 2000);
+
+                this._emit('success', {});
+                GM_notification({ title: 'Download Iniciado', text: filename, timeout: 3000 });
+
+            } catch (e) {
+                console.error("Erro ao salvar via Link, tentando fallback...", e);
+                // Fallback (menos provável de ser necessário agora)
+                if (typeof GM_download === 'function') {
+                    GM_download({ url: url, name: filename, saveAs: true });
+                }
             }
         }
 
@@ -414,21 +367,11 @@
             });
         }
 
-        saveFile(blob) {
-            const url = URL.createObjectURL(blob);
-            const name = `${this.title}.ts`;
-            GM_notification({ title: 'Download Concluído', text: 'Salvando arquivo...', timeout: 2000 });
-            this._emit('success', {});
-            try {
-                if (typeof GM_download === 'function') GM_download({ url, name, saveAs: true, onload: () => URL.revokeObjectURL(url) });
-                else { const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 100); }
-            } catch(e) { console.error(e); }
-        }
         async clearCompletionState() { await GM_deleteValue(this.resumeKey); }
     }
 
     // ===================================================================================
-    // 3. INTERFACE (UI Grid Layout)
+    // 3. INTERFACE (UI)
     // ===================================================================================
     class BFTVInterface {
         constructor() {
@@ -448,12 +391,9 @@
 
         inject() {
             GM_addStyle(STYLES);
-
-            // Raiz isolada
             this.root = document.createElement('div');
             this.root.id = 'bftv-root';
 
-            // Painel
             this.panel = document.createElement('div');
             this.panel.className = 'bftv-panel';
             this.panel.innerHTML = `
@@ -466,7 +406,6 @@
                 </div>
             `;
 
-            // Botão
             const fab = document.createElement('div');
             fab.className = 'bftv-fab';
             fab.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
@@ -489,14 +428,11 @@
         async scan() {
             const list = document.getElementById('bftv-list');
             list.innerHTML = `<div class="bftv-message">Analisando página...</div>`;
-
             try {
                 const data = await this.extractor.extract();
                 this.hasExtracted = true;
-
                 document.getElementById('bftv-title-display').textContent = data.title;
                 list.innerHTML = '';
-
                 data.sources.forEach(source => this.renderRow(list, source, data.title));
             } catch (e) {
                 list.innerHTML = `<div class="bftv-message bftv-error">${e.message}</div>`;
@@ -506,7 +442,6 @@
         renderRow(container, source, title) {
             const item = document.createElement('div');
             item.className = 'bftv-item';
-
             const iconDownload = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
             const iconCancel = `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 
@@ -540,7 +475,6 @@
                     return;
                 }
 
-                // Iniciar Download
                 const dl = new Downloader(source, `${title}_${source.label}`);
                 this.activeDownloads.set(source.url, dl);
 
@@ -585,5 +519,7 @@
     }
 
     new BFTVInterface();
+
+})();
 
 })();
