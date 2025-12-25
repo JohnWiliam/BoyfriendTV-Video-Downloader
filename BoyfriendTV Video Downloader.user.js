@@ -3,7 +3,7 @@
 // @namespace    Violentmonkey Scripts
 // @version      2.0.0
 // @description  Scrip para Download de seguimentos HLS, com interface moderna e polida.
-// @author       Parceiro IA & User
+// @author       John Wiliam
 // @match        *://*.boyfriendtv.com/videos/*
 // @updateURL    https://github.com/JohnWiliam/BoyfriendTV-Video-Downloader/raw/refs/heads/main/BoyfriendTV%20Video%20Downloader.user.js
 // @downloadURL  https://github.com/JohnWiliam/BoyfriendTV-Video-Downloader/raw/refs/heads/main/BoyfriendTV%20Video%20Downloader.user.js
