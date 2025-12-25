@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BoyfriendTV Downloader [Ultimate]
 // @namespace    Violentmonkey Scripts
-// @version      2.0.0
+// @version      2.0.1
 // @description  Scrip para Download de seguimentos HLS, com interface moderna e polida.
 // @author       John Wiliam
 // @match        *://*.boyfriendtv.com/videos/*
@@ -36,7 +36,7 @@
     };
 
     // ===================================================================================
-    // 1. ESTILO VISUAL (Grid Layout Estável - v8.0)
+    // 1. ESTILO VISUAL (Grid Layout)
     // ===================================================================================
     const STYLES = `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
