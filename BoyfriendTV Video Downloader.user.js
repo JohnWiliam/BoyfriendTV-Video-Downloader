@@ -5,8 +5,8 @@
 // @description  Scrip para Download de seguimentos HLS, com interface moderna e polida.
 // @author       Parceiro IA & User
 // @match        *://*.boyfriendtv.com/videos/*
-// @updateURL    https://github.com/JohnWiliam/YouTube-Enhancer/raw/refs/heads/main/YouTube%20Enhancer.user.js
-// @downloadURL  https://github.com/JohnWiliam/YouTube-Enhancer/raw/refs/heads/main/YouTube%20Enhancer.user.js
+// @updateURL    https://github.com/JohnWiliam/BoyfriendTV-Video-Downloader/raw/refs/heads/main/BoyfriendTV%20Video%20Downloader.user.js
+// @downloadURL  https://github.com/JohnWiliam/BoyfriendTV-Video-Downloader/raw/refs/heads/main/BoyfriendTV%20Video%20Downloader.user.js
 // @grant        GM_addStyle
 // @grant        GM_setClipboard
 // @grant        GM_download
