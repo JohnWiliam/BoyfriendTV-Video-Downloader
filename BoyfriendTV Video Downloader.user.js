@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BoyfriendTV Downloader [Ultimate]
 // @namespace    Violentmonkey Scripts
-// @version      1.0.0
+// @version      2.0.0
 // @description  Scrip para Download de seguimentos HLS, com interface moderna e polida.
 // @author       Parceiro IA & User
 // @match        *://*.boyfriendtv.com/videos/*
