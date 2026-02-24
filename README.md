@@ -1,6 +1,6 @@
 # 📥 BoyfriendTV Downloader [Ultimate]
 
-![Version](https://img.shields.io/badge/Version-2.0.1-blue)
+![Version](https://img.shields.io/badge/Version-2.1.0-blue)
 ![Language](https://img.shields.io/badge/Language-JavaScript-F7DF1E?logo=javascript&logoColor=F7DF1E)
 ![Author](https://img.shields.io/badge/Author-John%20Wiliam%20%26%20IA-orange)
 [![Install](https://img.shields.io/badge/Install-Click_Here-green)](https://github.com/JohnWiliam/BoyfriendTV-Video-Downloader/raw/refs/heads/main/BoyfriendTV%20Video%20Downloader.user.js)
@@ -14,12 +14,12 @@ Um Userscript robusto e moderno para **Violentmonkey**, projetado para facilitar
 O script foi desenvolvido com foco em performance e usabilidade (UX/UI):
 
 * **🎨 Interface Moderna (UI):** Painel flutuante com *Grid Layout*, fontes limpas (Inter) e design responsivo "Dark Mode".
-* **🧩 Suporte HLS Nativo:** Capaz de identificar, baixar e unir automaticamente segmentos `.ts` em um arquivo final pronto para reprodução.
+* **🧩 Suporte HLS Nativo + Remux MP4:** Identifica, baixa e une segmentos `.ts`, realizando remux para `.mp4` via `ffmpeg.wasm` embutido no script (sem recodificação).
 * **⚡ Download Multi-thread:** Sistema inteligente que gerencia filas de download com até **conexões simultâneas** (configurável) para maximizar a velocidade.
 * **🛡️ Resiliência a Falhas:** Lógica de *retry* automática (até 5 tentativas) para lidar com instabilidades de rede ou timeouts em segmentos específicos.
 * **📊 Monitoramento em Tempo Real:** Exibe o progresso percentual, velocidade de download (MB/s) e status de cada vídeo individualmente.
 * **🏷️ Títulos Limpos:** Algoritmo de extração inteligente que remove metadados desnecessários (como contagem de visualizações) do nome do arquivo final.
-* **💾 Salvamento via Blob:** Utiliza a API de Blob do navegador para gerar e salvar o arquivo final sem depender excessivamente de servidores externos.
+* **💾 Salvamento via Blob:** Utiliza a API de Blob do navegador para gerar e salvar o arquivo final localmente, incluindo saída final em `.mp4` para fluxos HLS.
 
 ---
 
@@ -42,7 +42,7 @@ Para utilizar este script, você precisa de um gerenciador de userscripts instal
 3.  **Clique no botão** para abrir o painel do gerenciador.
 4.  O script analisará automaticamente as resoluções disponíveis.
 5.  Clique no botão **"Baixar"** ao lado da qualidade desejada.
-6.  Acompanhe o progresso na barra visual. Quando concluído, o navegador solicitará o local para salvar o arquivo `.ts`.
+6.  Acompanhe o progresso na barra visual. Quando concluído, o navegador solicitará o local para salvar o arquivo `.mp4` (remuxado via `ffmpeg.wasm`).
 
 ---
 
@@ -55,7 +55,7 @@ Para desenvolvedores ou curiosos, o script opera nas seguintes camadas:
     * Analisa playlists `.m3u8`.
     * Gerencia um *pool* de Workers para baixar segmentos simultaneamente.
     * Calcula a velocidade média de transferência.
-    * Une os `ArrayBuffers` dos segmentos em um único `Blob` (`video/mp2t`).
+    * Une os segmentos em `Blob` (`video/mp2t`) e, para HLS, aplica remux para `video/mp4` com `ffmpeg.wasm` (`-c copy`, `+faststart`).
 * **Persistência:** Utiliza `GM_getValue`/`GM_setValue` para tentar recuperar estados (preparado para implementações futuras de "resume").
 
 ---

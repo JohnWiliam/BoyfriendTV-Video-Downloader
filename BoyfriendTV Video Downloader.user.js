@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BoyfriendTV Downloader [Ultimate]
 // @namespace    Violentmonkey Scripts
-// @version      2.0.2
+// @version      2.1.0
 // @description  Script para Download de segmentos HLS, com interface moderna e polida.
 // @author       John Wiliam
 // @match        *://*.boyfriendtv.com/videos/*
@@ -15,6 +15,7 @@
 // @grant        GM_setValue
 // @grant        GM_deleteValue
 // @grant        GM_notification
+// @connect      cdn.jsdelivr.net
 // @run-at       document-end
 // ==/UserScript==
 
@@ -28,7 +29,10 @@
         MAX_CONCURRENT_DOWNLOADS: 3,
         MAX_RETRIES: 5,
         SEGMENT_TIMEOUT: 15000,
-        MIN_SEGMENTS_FOR_ETA: 5
+        MIN_SEGMENTS_FOR_ETA: 5,
+        REMUX_HLS_TO_MP4: true,
+        FFMPEG_VERSION: '0.11.6',
+        FFMPEG_CDN: 'https://cdn.jsdelivr.net/npm/@ffmpeg'
     };
 
     const debug = {
@@ -215,6 +219,9 @@
     }
 
     class Downloader {
+        static ffmpegLoaderPromise = null;
+        static ffmpegInstance = null;
+
         constructor(source, title) {
             this.source = source;
             this.title = title;
@@ -240,20 +247,86 @@
                 const blobs = await this.downloadAllSegments();
                 if (this.isCancelled) return;
 
-                this._emit('progress', { percent: 100, message: 'Unindo...', speed: 0, eta: 0 });
+                this._emit('progress', { percent: 100, message: 'Unindo segmentos...', speed: 0, eta: 0 });
 
-                const mergedBlob = new Blob(blobs, { type: 'video/mp2t' });
-                this.saveFile(mergedBlob);
+                const mergedBlob = new Blob(blobs, { type: this.source.type === 'HLS' ? 'video/mp2t' : 'video/mp4' });
+
+                if (this.source.type === 'HLS' && CONFIG.REMUX_HLS_TO_MP4) {
+                    this._emit('progress', { percent: 100, message: 'Remux MP4 (ffmpeg.wasm)...', speed: 0, eta: 0 });
+                    const mp4Blob = await this.remuxToMp4(mergedBlob);
+                    if (this.isCancelled) return;
+                    this.saveFile(mp4Blob, 'mp4');
+                } else {
+                    this.saveFile(mergedBlob, this.source.type === 'HLS' ? 'ts' : 'mp4');
+                }
+
                 await this.clearCompletionState();
             } catch (error) {
                 if (!this.isCancelled) this._emit('error', { message: error.message });
             }
         }
 
-        saveFile(blob) {
+        static async ensureFFmpegLoaded() {
+            if (Downloader.ffmpegInstance) return Downloader.ffmpegInstance;
+            if (Downloader.ffmpegLoaderPromise) return Downloader.ffmpegLoaderPromise;
+
+            Downloader.ffmpegLoaderPromise = (async () => {
+                const scriptId = 'bftv-ffmpeg-wasm-script';
+                const existing = document.getElementById(scriptId);
+
+                if (!existing) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.id = scriptId;
+                        script.src = `${CONFIG.FFMPEG_CDN}/ffmpeg@${CONFIG.FFMPEG_VERSION}/dist/ffmpeg.min.js`;
+                        script.onload = resolve;
+                        script.onerror = () => reject(new Error('Falha ao carregar ffmpeg.wasm.'));
+                        document.head.appendChild(script);
+                    });
+                }
+
+                if (!window.FFmpeg?.createFFmpeg) {
+                    throw new Error('API do ffmpeg.wasm indisponível no navegador.');
+                }
+
+                const corePath = `${CONFIG.FFMPEG_CDN}/core@${CONFIG.FFMPEG_VERSION}/dist/ffmpeg-core.js`;
+                const ffmpeg = window.FFmpeg.createFFmpeg({ log: false, corePath });
+                await ffmpeg.load();
+                Downloader.ffmpegInstance = ffmpeg;
+                return ffmpeg;
+            })();
+
+            return Downloader.ffmpegLoaderPromise;
+        }
+
+        async remuxToMp4(tsBlob) {
+            const ffmpeg = await Downloader.ensureFFmpegLoaded();
+            const inputName = `input-${Date.now()}.ts`;
+            const outputName = `output-${Date.now()}.mp4`;
+
+            try {
+                const tsData = await window.FFmpeg.fetchFile(tsBlob);
+                ffmpeg.FS('writeFile', inputName, tsData);
+                await ffmpeg.run(
+                    '-i', inputName,
+                    '-c', 'copy',
+                    '-movflags', '+faststart',
+                    outputName
+                );
+                const outputData = ffmpeg.FS('readFile', outputName);
+                return new Blob([outputData.buffer], { type: 'video/mp4' });
+            } catch (error) {
+                throw new Error(`Falha no remux para MP4: ${error.message || error}`);
+            } finally {
+                try { ffmpeg.FS('unlink', inputName); } catch (_) {}
+                try { ffmpeg.FS('unlink', outputName); } catch (_) {}
+            }
+        }
+
+        saveFile(blob, extension = 'ts') {
             // Limpeza rigorosa do nome do arquivo
             const safeTitle = this.title.replace(/[\\/:*?"<>|]/g, '_').trim();
-            const filename = `${safeTitle}.ts`;
+            const filename = `${safeTitle}.${extension}`;
             const url = window.URL.createObjectURL(blob);
 
             try {
@@ -485,6 +558,10 @@
 
                 dl.on('progress', (d) => {
                     progress.style.width = `${d.percent}%`;
+                    if (d.message) {
+                        status.textContent = d.message;
+                        return;
+                    }
                     status.textContent = d.speed > 0 ? `${d.percent}% (${d.speed.toFixed(1)} MB/s)` : `${d.percent}%`;
                 });
 
