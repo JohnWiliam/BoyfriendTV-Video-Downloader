@@ -15,7 +15,7 @@ O script foi desenvolvido com foco em performance e usabilidade (UX/UI):
 
 * **🎨 Interface Moderna (UI):** Painel flutuante com *Grid Layout*, fontes limpas (Inter) e design responsivo "Dark Mode".
 * **🧩 Suporte HLS Nativo:** Capaz de identificar, baixar e unir automaticamente segmentos `.ts` em um arquivo final pronto para reprodução.
-* **⚡ Download Multi-thread:** Sistema inteligente que gerencia filas de download com até **3 conexões simultâneas** (configurável) para maximizar a velocidade.
+* **⚡ Download Multi-thread:** Sistema inteligente que gerencia filas de download com até **conexões simultâneas** (configurável) para maximizar a velocidade.
 * **🛡️ Resiliência a Falhas:** Lógica de *retry* automática (até 5 tentativas) para lidar com instabilidades de rede ou timeouts em segmentos específicos.
 * **📊 Monitoramento em Tempo Real:** Exibe o progresso percentual, velocidade de download (MB/s) e status de cada vídeo individualmente.
 * **🏷️ Títulos Limpos:** Algoritmo de extração inteligente que remove metadados desnecessários (como contagem de visualizações) do nome do arquivo final.
@@ -57,6 +57,13 @@ Para desenvolvedores ou curiosos, o script opera nas seguintes camadas:
     * Calcula a velocidade média de transferência.
     * Une os `ArrayBuffers` dos segmentos em um único `Blob` (`video/mp2t`).
 * **Persistência:** Utiliza `GM_getValue`/`GM_setValue` para tentar recuperar estados (preparado para implementações futuras de "resume").
+
+---
+
+ ## 🧠 Otimizado para:
+*    Extensão "Violentmonkey".
+*    Firefox v146+ 64-bits.
+*    Windows 11 25H2+ - 32GB RAM.
 
 ---
 
